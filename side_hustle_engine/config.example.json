@@ -1,0 +1,23 @@
+{
+  "queries": [
+    "barbers in Cork, Ireland",
+    "beauty salons in Cork, Ireland",
+    "cleaning services in Cork, Ireland",
+    "electricians in Cork, Ireland",
+    "plumbers in Cork, Ireland",
+    "driving schools in Cork, Ireland",
+    "restaurants in Cork, Ireland"
+  ],
+  "max_leads_per_query": 10,
+  "min_score": 70,
+  "only_missing_website": true,
+  "weights": {
+    "missing_website": 55,
+    "rating_present": 10,
+    "reviews_10_plus": 10,
+    "reviews_50_plus": 10,
+    "address_present": 5,
+    "maps_uri_present": 5,
+    "rating_4_plus": 5
+  }
+}
