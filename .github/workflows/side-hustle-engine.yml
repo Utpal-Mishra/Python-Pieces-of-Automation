@@ -1,13 +1,48 @@
 name: Side Hustle Engine
 
 on:
+  pull_request:
+    paths:
+      - "side_hustle_engine/**"
+      - ".github/workflows/side-hustle-engine.yml"
   workflow_dispatch:
   schedule:
     - cron: "15 6 * * 6"
 
 jobs:
+  smoke-test:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r side_hustle_engine/requirements.txt
+
+      - name: Compile Python
+        run: python -m py_compile side_hustle_engine/main.py
+
+      - name: Run sample pipeline
+        run: |
+          python side_hustle_engine/main.py \
+            --config side_hustle_engine/config.example.json \
+            --sample \
+            --output side_hustle_engine/output-sample
+          test -f side_hustle_engine/output-sample/leads.csv
+          test -f side_hustle_engine/output-sample/outreach_queue.csv
+          test -f side_hustle_engine/output-sample/run_summary.json
+
   build-lead-package:
-    if: ${{ vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name != 'pull_request' && (vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
