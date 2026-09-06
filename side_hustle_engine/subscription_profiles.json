@@ -1,0 +1,26 @@
+{
+  "care": {
+    "label": "Website Care",
+    "price_hypothesis_eur_month": 59,
+    "best_for": "Any client with a production website",
+    "metrics": ["site_availability", "https_health", "contact_path_health", "monthly_website_sessions", "monthly_enquiries"],
+    "deliverables": ["automated website health check", "monthly KPI snapshot", "issue alert", "minor content/configuration allowance"],
+    "manual_scope": "exception handling only"
+  },
+  "growth": {
+    "label": "Growth Intelligence",
+    "price_hypothesis_eur_month": 129,
+    "best_for": "Local service and retail businesses that want more measurable enquiries/visits",
+    "metrics": ["website_sessions", "traffic_sources", "search_clicks", "calls_or_enquiries", "direction_or_store_intent", "new_reviews", "average_rating", "review_themes", "conversion_rate"],
+    "deliverables": ["everything in Website Care", "GA4/Search Console/Business Profile performance digest when connected", "review sentiment and theme change", "monthly opportunity ranking", "one recommended website/content experiment"],
+    "manual_scope": "approve unusual recommendations or client-facing changes"
+  },
+  "commerce": {
+    "label": "Commerce Intelligence",
+    "price_hypothesis_eur_month": 249,
+    "best_for": "Retail/e-commerce clients with sales data such as Shopify",
+    "metrics": ["website_sessions", "product_views", "add_to_cart_rate", "checkout_rate", "conversion_rate", "orders", "revenue", "average_order_value", "repeat_customer_rate", "top_products", "weak_products", "review_themes", "traffic_source_value"],
+    "deliverables": ["everything in Growth Intelligence", "store funnel analysis", "product/category performance", "traffic-to-revenue analysis", "customer review analysis", "monthly commercial action plan", "quarterly CRO/merchandising experiment recommendation"],
+    "manual_scope": "client approval for commercial/merchandising changes"
+  }
+}
