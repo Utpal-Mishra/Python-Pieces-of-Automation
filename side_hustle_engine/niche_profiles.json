@@ -1,0 +1,65 @@
+{
+  "dentist": {
+    "label": "Dental clinic",
+    "match_keywords": ["dentist", "dental"],
+    "primary_cta": "Request an appointment",
+    "suggested_sections": ["Treatments", "New Patients", "Meet the Team", "Patient Experience", "Location & Hours", "Appointment Request"],
+    "trust_elements": ["professional credentials", "patient experience", "location", "opening hours", "clear appointment path"],
+    "assumed_customer_value_eur": 250,
+    "incremental_customers_per_month": [1, 3, 6]
+  },
+  "physiotherapy": {
+    "label": "Physiotherapy clinic",
+    "match_keywords": ["physiotherapist", "physiotherapy", "physio"],
+    "primary_cta": "Book an assessment",
+    "suggested_sections": ["Conditions & Services", "How Treatment Works", "Practitioners", "Patient Experience", "Location & Hours", "Book an Assessment"],
+    "trust_elements": ["practitioner expertise", "treatment approach", "patient experience", "location", "booking clarity"],
+    "assumed_customer_value_eur": 180,
+    "incremental_customers_per_month": [2, 5, 9]
+  },
+  "clinic": {
+    "label": "Healthcare clinic",
+    "match_keywords": ["medical_clinic", "doctor", "clinic", "health"],
+    "primary_cta": "Contact the clinic",
+    "suggested_sections": ["Services", "Who We Help", "Clinical Team", "Patient Information", "Location & Hours", "Contact"],
+    "trust_elements": ["verified services", "clinical credentials", "patient information", "location", "contact clarity"],
+    "assumed_customer_value_eur": 200,
+    "incremental_customers_per_month": [1, 3, 6]
+  },
+  "beauty": {
+    "label": "Beauty & wellness business",
+    "match_keywords": ["beauty", "salon", "spa", "hair"],
+    "primary_cta": "Book a service",
+    "suggested_sections": ["Services", "Gallery", "Why Clients Return", "Pricing to Confirm", "Location & Hours", "Booking"],
+    "trust_elements": ["visual quality", "reviews", "service clarity", "location", "booking"],
+    "assumed_customer_value_eur": 75,
+    "incremental_customers_per_month": [3, 8, 15]
+  },
+  "home_services": {
+    "label": "Local home service",
+    "match_keywords": ["plumber", "electrician", "cleaning", "contractor", "roofer"],
+    "primary_cta": "Request a quote",
+    "suggested_sections": ["Services", "Service Area", "Why Choose Us", "Recent Work", "Reviews", "Request a Quote"],
+    "trust_elements": ["service area", "reliability", "reviews", "response time", "quote CTA"],
+    "assumed_customer_value_eur": 250,
+    "incremental_customers_per_month": [2, 5, 10]
+  },
+  "restaurant": {
+    "label": "Restaurant",
+    "match_keywords": ["restaurant", "cafe", "food"],
+    "primary_cta": "View menu / reserve",
+    "suggested_sections": ["Menu", "Atmosphere", "Popular With Customers", "Opening Hours", "Location", "Reserve / Order"],
+    "trust_elements": ["food imagery", "menu clarity", "reviews", "opening hours", "directions"],
+    "assumed_customer_value_eur": 35,
+    "incremental_customers_per_month": [10, 25, 50]
+  },
+  "default": {
+    "label": "Local business",
+    "match_keywords": [],
+    "primary_cta": "Contact the business",
+    "suggested_sections": ["Services", "About", "Customer Experience", "Location & Hours", "Frequently Asked Questions", "Contact"],
+    "trust_elements": ["service clarity", "reviews", "location", "contact options"],
+    "assumed_customer_value_eur": 150,
+    "incremental_customers_per_month": [1, 3, 6]
+  }
+}
