@@ -5,6 +5,7 @@ on:
     paths:
       - "side_hustle_engine/**"
       - ".github/workflows/side-hustle-engine.yml"
+      - ".github/workflows/monthly-client-intelligence.yml"
   workflow_dispatch:
   schedule:
     - cron: "15 6 * * 6"
