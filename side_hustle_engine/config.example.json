@@ -8,7 +8,11 @@
     "plumbers in Cork, Ireland",
     "electricians in Cork, Ireland",
     "cleaning services in Cork, Ireland",
-    "restaurants in Cork, Ireland"
+    "restaurants in Cork, Ireland",
+    "independent boutiques in Cork, Ireland",
+    "gift shops in Cork, Ireland",
+    "independent clothing stores in Cork, Ireland",
+    "home and gift stores in Cork, Ireland"
   ],
   "max_leads_per_query": 12,
   "min_score": 60,
