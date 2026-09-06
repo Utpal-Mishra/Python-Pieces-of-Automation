@@ -66,6 +66,26 @@ jobs:
             --plan "${{ steps.plan.outputs.value }}" \
             --output /tmp/side-hustle-client/report
 
+      - name: Log report into Agency Control Center
+        if: ${{ vars.CRM_AUTO_SYNC_ENABLED == 'true' }}
+        env:
+          CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
+        run: |
+          ACCOUNT_ID=$(python - <<'PY'
+          import json
+          config = json.load(open('/tmp/side-hustle-client/client.json', encoding='utf-8'))
+          print(config.get('crm_account_id', ''))
+          PY
+          )
+          if [ -n "$ACCOUNT_ID" ]; then
+            python side_hustle_engine/crm_log_report.py \
+              --report /tmp/side-hustle-client/report/monthly_report.json \
+              --account-id "$ACCOUNT_ID"
+          else
+            python side_hustle_engine/crm_log_report.py \
+              --report /tmp/side-hustle-client/report/monthly_report.json
+          fi
+
       - name: Upload client report only
         uses: actions/upload-artifact@v4
         with:
