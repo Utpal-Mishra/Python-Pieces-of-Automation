@@ -34,6 +34,9 @@ jobs:
           python -m py_compile side_hustle_engine/main.py
           python -m py_compile side_hustle_engine/agency_pipeline.py
           python -m py_compile side_hustle_engine/subscription_pipeline.py
+          python -m py_compile side_hustle_engine/crm_store.py
+          python -m py_compile side_hustle_engine/crm_sync.py
+          python -m py_compile side_hustle_engine/control_center.py
           python -m py_compile side_hustle_engine/integrations/live_metrics.py
           python -m py_compile side_hustle_engine/integrations/finalize_share_links.py
 
@@ -56,6 +59,21 @@ jobs:
             --queue side_hustle_engine/output-sample/outreach_queue.csv \
             --base-url https://example-preview.invalid
           grep -q "https://example-preview.invalid" side_hustle_engine/output-sample/outreach_queue.csv
+
+      - name: Test CRM sync and activity store
+        env:
+          CRM_DATABASE_URL: sqlite:///side_hustle_engine/runtime/ci-agency-control.db
+        run: |
+          python side_hustle_engine/crm_sync.py --queue side_hustle_engine/output-sample/outreach_queue.csv
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_accounts, list_events
+          engine = get_engine()
+          assert len(list_accounts(engine)) > 0
+          assert len(list_events(engine)) > 0
+          print('CRM sync OK')
+          PY
 
       - name: Run integrated subscription sample
         run: |
@@ -132,6 +150,14 @@ jobs:
             --queue side_hustle_engine/output/outreach_queue.csv \
             --base-url "$DEPLOY_URL"
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Sync generated prospects into private CRM
+        if: ${{ vars.CRM_AUTO_SYNC_ENABLED == 'true' }}
+        env:
+          CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
+        run: |
+          python side_hustle_engine/crm_sync.py \
+            --queue side_hustle_engine/output/outreach_queue.csv
 
       - name: Upload private agency package
         uses: actions/upload-artifact@v4
