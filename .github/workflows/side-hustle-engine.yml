@@ -33,6 +33,8 @@ jobs:
           python -m py_compile side_hustle_engine/main.py
           python -m py_compile side_hustle_engine/agency_pipeline.py
           python -m py_compile side_hustle_engine/subscription_pipeline.py
+          python -m py_compile side_hustle_engine/integrations/live_metrics.py
+          python -m py_compile side_hustle_engine/integrations/finalize_share_links.py
 
       - name: Run agency sample pipeline
         run: |
@@ -43,17 +45,26 @@ jobs:
             --output side_hustle_engine/output-sample
           test -f side_hustle_engine/output-sample/leads.csv
           test -f side_hustle_engine/output-sample/outreach_queue.csv
-          test -f side_hustle_engine/output-sample/run_summary.json
           test -d side_hustle_engine/output-sample/previews
           test -d side_hustle_engine/output-sample/audits
           test -d side_hustle_engine/output-sample/prompts
 
-      - name: Run subscription sample pipeline
+      - name: Test preview share-link finalisation
         run: |
+          python side_hustle_engine/integrations/finalize_share_links.py \
+            --queue side_hustle_engine/output-sample/outreach_queue.csv \
+            --base-url https://example-preview.invalid
+          grep -q "https://example-preview.invalid" side_hustle_engine/output-sample/outreach_queue.csv
+
+      - name: Run integrated subscription sample
+        run: |
+          python side_hustle_engine/integrations/live_metrics.py \
+            --sample \
+            --output side_hustle_engine/integrated-sample.json
           python side_hustle_engine/subscription_pipeline.py \
             --profiles side_hustle_engine/subscription_profiles.json \
+            --client side_hustle_engine/integrated-sample.json \
             --plan commerce \
-            --sample \
             --output side_hustle_engine/subscription-output-sample
           test -f side_hustle_engine/subscription-output-sample/monthly_report.json
           test -f side_hustle_engine/subscription-output-sample/monthly_report.md
@@ -79,14 +90,49 @@ jobs:
       - name: Generate agency lead package
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
-          PREVIEW_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
         run: |
           python side_hustle_engine/agency_pipeline.py \
             --config side_hustle_engine/config.example.json \
             --profiles side_hustle_engine/niche_profiles.json \
             --output side_hustle_engine/output
 
-      - name: Upload lead package
+      - name: Set up Node for optional preview deploy
+        if: ${{ vars.PREVIEW_DEPLOY_ENABLED == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy prospect pages to Netlify draft URL
+        if: ${{ vars.PREVIEW_DEPLOY_ENABLED == 'true' }}
+        id: preview_deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npm install -g netlify-cli
+          netlify deploy \
+            --dir=side_hustle_engine/output/previews \
+            --site="$NETLIFY_SITE_ID" \
+            --auth="$NETLIFY_AUTH_TOKEN" \
+            --no-build \
+            --json > /tmp/netlify-deploy.json
+          DEPLOY_URL=$(python - <<'PY'
+          import json
+          payload = json.load(open('/tmp/netlify-deploy.json', encoding='utf-8'))
+          for key in ('deploy_url', 'deploy_ssl_url', 'url'):
+              if payload.get(key):
+                  print(payload[key])
+                  break
+          else:
+              raise SystemExit(f'No deploy URL found in Netlify response keys: {list(payload)}')
+          PY
+          )
+          python side_hustle_engine/integrations/finalize_share_links.py \
+            --queue side_hustle_engine/output/outreach_queue.csv \
+            --base-url "$DEPLOY_URL"
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload private agency package
         uses: actions/upload-artifact@v4
         with:
           name: side-hustle-leads-${{ github.run_number }}
