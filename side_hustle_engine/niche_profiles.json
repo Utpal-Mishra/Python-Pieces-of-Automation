@@ -53,6 +53,15 @@
     "assumed_customer_value_eur": 35,
     "incremental_customers_per_month": [10, 25, 50]
   },
+  "retail": {
+    "label": "Independent retail store",
+    "match_keywords": ["boutique", "clothing_store", "gift_shop", "home_goods_store", "jewelry_store", "jewellery", "shoe_store", "fashion", "accessories", "retail", "shop"],
+    "primary_cta": "Browse collections / visit the store",
+    "suggested_sections": ["New & Featured", "Collections", "Gifts & Local Makers", "Why Customers Visit", "Store Location & Hours", "Enquire / Reserve an Item"],
+    "trust_elements": ["product curation", "local identity", "customer reviews", "stock freshness", "store location", "easy enquiry path"],
+    "assumed_customer_value_eur": 45,
+    "incremental_customers_per_month": [6, 15, 30]
+  },
   "default": {
     "label": "Local business",
     "match_keywords": [],
