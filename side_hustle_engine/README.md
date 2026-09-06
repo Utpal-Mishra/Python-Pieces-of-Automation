@@ -1,17 +1,42 @@
 # Side Hustle Engine — Agency Factory
 
-An auditable pipeline for turning public local-business information into **qualified website-agency opportunities, personalised research packs, website concepts and outreach-ready links** with minimal repetitive work.
+An auditable pipeline for turning public local-business information into **qualified website-agency opportunities, personalised research packs, website concepts, outreach-ready links and recurring analytics services** with minimal repetitive work.
 
-The aim is not spam or fake passive-income claims. The engine automates the research and production work while leaving the trust-sensitive decision to contact a business with a human.
+The aim is not spam or fake passive-income claims. The engine automates the research and production work while leaving trust-sensitive contact, factual approval and commercial decisions with a human.
 
-## Reel-inspired pipeline
+## Agency acquisition pipeline
 
 1. **Find leads** — search selected locations and business categories with Google Places Text Search (New).
-2. **Understand the niche** — map dentists, physiotherapists, clinics, beauty, restaurants and local services to different website structures, trust signals and CTAs.
+2. **Understand the niche** — map dentists, physiotherapists, clinics, beauty, restaurants, home services and retail businesses to different website structures, trust signals and CTAs.
 3. **Audit the business** — enrich shortlisted leads with Place Details, public reputation themes, Maps review/photo links, phone/hours and, where a website exists, a lightweight conversion/technical audit.
 4. **Model commercial value** — generate a transparent low/base/high website-value scenario and a heuristic agency-conversion probability. These are assumptions for prioritisation, never claims about the business's actual revenue.
 5. **Build the concept** — generate an unofficial personalised HTML preview plus a structured website-generation prompt and audit JSON for deeper automated iteration.
 6. **Prepare outreach** — produce channel-specific email, LinkedIn, Instagram and WhatsApp drafts and, once a preview host is connected, a shareable link for each prospect.
+7. **Sell and onboard** — use `SALES_PLAYBOOK.md` for qualification, discovery, offer structure and closing principles.
+
+## Recurring subscription pipeline
+
+After the website is live, `subscription_pipeline.py` turns connected/client-approved performance data into a monthly report and prioritised action list.
+
+Configured plans in `subscription_profiles.json`:
+
+- **Website Care** — site health + basic KPI snapshot.
+- **Growth Intelligence** — website/search/local/review performance + monthly opportunity ranking.
+- **Commerce Intelligence** — store funnel, product/category performance, traffic-to-revenue, customer review analysis and commercial recommendations.
+
+The pipeline is source-agnostic. In production, adapters can feed it data from services such as GA4, Search Console, Google Business Profile and Shopify once the client authorises the relevant connections.
+
+## Retail niche
+
+Retail is now a dedicated strategy rather than falling into the generic local-business profile. The engine can target boutiques, gift shops, fashion/accessory stores, home-goods stores and similar retailers with a structure focused on:
+
+- new/featured products;
+- collections;
+- gifts/local makers;
+- customer reputation;
+- location/hours;
+- enquiry or item-reservation path;
+- optional commerce integration after client discovery.
 
 ## Research and content guardrails
 
@@ -30,8 +55,11 @@ Preview pages include `noindex,nofollow` and an explicit unofficial-concept noti
 
 ## Files
 
-- `agency_pipeline.py` — V2 agency research, audit, commercial model, concept generation and outreach queue.
-- `niche_profiles.json` — niche matching, suggested information architecture, CTAs and editable commercial assumptions.
+- `agency_pipeline.py` — agency research, audit, commercial model, concept generation and outreach queue.
+- `niche_profiles.json` — niche matching, information architecture, CTAs and editable commercial assumptions.
+- `subscription_pipeline.py` — recurring client performance analysis and owner-facing monthly report generation.
+- `subscription_profiles.json` — subscription tiers, KPI groups and editable price hypotheses.
+- `SALES_PLAYBOOK.md` — prospect qualification, outreach, discovery and selling structure.
 - `config.example.json` — categories, locations, scoring weights and pipeline limits.
 - `main.py` — original V1 website-gap prototype retained for reference.
 
@@ -41,7 +69,7 @@ Preview pages include `noindex,nofollow` and an explicit unofficial-concept noti
 - Google Places API (New)
 - `pip install -r requirements.txt`
 
-## Test with no API spend
+## Test the agency pipeline with no API spend
 
 ```bash
 cd side_hustle_engine
@@ -52,9 +80,17 @@ python agency_pipeline.py \
   --output output-sample
 ```
 
-The sample uses fictitious businesses but runs the full research → niche → value model → preview → prompt → outreach-queue flow.
+## Test the subscription pipeline
 
-## Live run
+```bash
+python subscription_pipeline.py \
+  --profiles subscription_profiles.json \
+  --plan commerce \
+  --sample \
+  --output subscription-output-sample
+```
+
+## Live acquisition run
 
 ```bash
 export GOOGLE_PLACES_API_KEY="your-key"
@@ -64,43 +100,33 @@ python agency_pipeline.py \
   --output output
 ```
 
-## Outputs
+## Acquisition outputs
 
 - `leads.csv` — discovered prospects, scores and niche assignment.
-- `outreach_queue.csv` — shortlisted businesses, problem summary, estimated value scenarios, conversion heuristic, channel drafts and shareable URL when configured.
+- `outreach_queue.csv` — shortlisted businesses, problem summary, value scenarios, conversion heuristic, channel drafts and shareable URL when configured.
 - `audits/*.json` — structured business research, website audit and strategy evidence.
-- `prompts/*.md` — business-specific website-generation / refinement brief.
+- `prompts/*.md` — business-specific website-generation/refinement brief.
 - `previews/<business>/index.html` — personalised unofficial concept page.
 - `run_summary.json` — batch-level forecast and pipeline metadata.
 
+## Subscription outputs
+
+- `monthly_report.json` — structured KPI movement and recommended actions.
+- `monthly_report.md` — client/owner-facing monthly summary.
+
+The current subscription engine accepts a normalised client-data JSON. Live provider adapters are the next integration layer; the analysis/reporting logic is deliberately kept independent from any one analytics provider.
+
 ## Website audit
 
-If a prospect already has a website, V2 can check basic signals such as:
-
-- reachability and HTTPS;
-- page title / meta-description presence;
-- mobile viewport;
-- contact links;
-- booking / appointment language;
-- presence of a form.
+If a prospect already has a website, the acquisition pipeline can check basic signals such as reachability/HTTPS, page title/meta description, mobile viewport, contact links, booking/appointment language and form presence.
 
 This makes the agency target both **no-website businesses** and **weak-website businesses** rather than treating every prospect identically.
 
 ## Commercial model
 
-`niche_profiles.json` contains editable assumptions such as customer value and low/base/high incremental-customer scenarios. These exist to rank opportunities and frame a business case.
+`niche_profiles.json` contains editable assumptions such as customer value and low/base/high incremental-customer scenarios. These exist to rank opportunities and frame a business case; they are never presented as factual revenue without real client data.
 
-For example, the engine can say:
-
-> Under the configured base scenario, three incremental customers at an assumed €250 value would represent €750/month.
-
-It must **not** say:
-
-> This clinic is losing €750/month.
-
-until there is real analytics or client-supplied evidence.
-
-The `agency_conversion_probability` is also only a starting heuristic. Once we record actual outreach outcomes, it should be replaced or calibrated using the real conversion dataset.
+`agency_conversion_probability` is also a starting heuristic. Once actual outreach outcomes are logged, it should be calibrated using the real conversion dataset.
 
 ## Shareable links
 
@@ -110,29 +136,22 @@ Suitable architecture:
 
 **generated static preview → private/unlisted preview host → unique prospect URL → human-approved outreach**
 
-Netlify Deploy Previews or Cloudflare Pages preview deployments are good candidates because they provide unique preview URLs. Do not publicly index prospect concepts as though they were official sites.
+Do not publicly index prospect concepts as though they were official sites.
 
 ## GitHub Actions automation
 
 `.github/workflows/side-hustle-engine.yml`:
 
-- compiles both V1 and V2;
-- executes a zero-cost fictitious V2 smoke test on the PR;
-- can run the live agency pipeline weekly;
+- compiles V1, agency V2 and the subscription pipeline;
+- executes zero-cost fictitious acquisition and subscription smoke tests on the PR;
+- can run the live agency acquisition pipeline weekly;
 - uploads the full lead package as a GitHub Actions artifact;
 - never sends outreach automatically.
 
-The scheduled run is gated. To activate it:
+The scheduled acquisition run remains gated by `SIDE_HUSTLE_AUTOMATION_ENABLED=true` plus the Places API key. Recurring client reports should be scheduled only after a client exists and its data-source permissions are configured.
 
-1. Add Actions secret `GOOGLE_PLACES_API_KEY`.
-2. Add repository variable `SIDE_HUSTLE_AUTOMATION_ENABLED=true`.
-3. Optionally add repository variable `PREVIEW_BASE_URL` after preview hosting is connected.
-4. Run once manually and review the results before relying on the schedule.
+## Mature operating model
 
-## Operating model
+**discover → niche → research → audit → prioritise → generate → refine → publish preview → review outreach → sell → onboard → deploy production → measure → analyse → recommend → retain**
 
-The desired mature workflow is:
-
-**discover → niche → research → audit → prioritise → generate → refine → publish preview → review outreach → sell → onboard → deploy production → recurring maintenance**
-
-The machine should eventually do almost all repeated data gathering, audit generation, concept creation, deployment preparation and reporting. Human involvement remains where it adds the most value: quality control, sales conversation, factual approval and client relationship management.
+The machine should do almost all repeated data gathering, audit generation, concept creation, deployment preparation and reporting. Human involvement remains where it adds the most value: quality control, sales conversation, factual approval and client relationship management.
