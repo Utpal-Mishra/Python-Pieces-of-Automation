@@ -1,23 +1,31 @@
 {
   "queries": [
-    "barbers in Cork, Ireland",
+    "dentists in Cork, Ireland",
+    "physiotherapists in Cork, Ireland",
+    "medical clinics in Cork, Ireland",
     "beauty salons in Cork, Ireland",
-    "cleaning services in Cork, Ireland",
-    "electricians in Cork, Ireland",
+    "barbers in Cork, Ireland",
     "plumbers in Cork, Ireland",
-    "driving schools in Cork, Ireland",
+    "electricians in Cork, Ireland",
+    "cleaning services in Cork, Ireland",
     "restaurants in Cork, Ireland"
   ],
-  "max_leads_per_query": 10,
-  "min_score": 70,
-  "only_missing_website": true,
+  "max_leads_per_query": 12,
+  "min_score": 60,
+  "enrich_top_n": 20,
+  "include_existing_websites": true,
+  "audit_existing_websites": true,
+  "preview_base_url": "",
   "weights": {
-    "missing_website": 55,
-    "rating_present": 10,
-    "reviews_10_plus": 10,
+    "missing_website": 45,
+    "website_present_audit_opportunity": 5,
+    "rating_present": 8,
+    "reviews_10_plus": 8,
     "reviews_50_plus": 10,
-    "address_present": 5,
-    "maps_uri_present": 5,
-    "rating_4_plus": 5
+    "reviews_150_plus": 8,
+    "address_present": 4,
+    "maps_uri_present": 4,
+    "rating_4_plus": 6,
+    "operational": 7
   }
 }
