@@ -36,6 +36,7 @@ jobs:
           python -m py_compile side_hustle_engine/subscription_pipeline.py
           python -m py_compile side_hustle_engine/crm_store.py
           python -m py_compile side_hustle_engine/crm_sync.py
+          python -m py_compile side_hustle_engine/crm_log_report.py
           python -m py_compile side_hustle_engine/control_center.py
           python -m py_compile side_hustle_engine/integrations/live_metrics.py
           python -m py_compile side_hustle_engine/integrations/finalize_share_links.py
@@ -87,6 +88,28 @@ jobs:
             --output side_hustle_engine/subscription-output-sample
           test -f side_hustle_engine/subscription-output-sample/monthly_report.json
           test -f side_hustle_engine/subscription-output-sample/monthly_report.md
+
+      - name: Test monthly report CRM logging
+        env:
+          CRM_DATABASE_URL: sqlite:///side_hustle_engine/runtime/ci-agency-control.db
+        run: |
+          ACCOUNT_ID=$(python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_accounts
+          print(list_accounts(get_engine())[0]['id'])
+          PY
+          )
+          python side_hustle_engine/crm_log_report.py \
+            --report side_hustle_engine/subscription-output-sample/monthly_report.json \
+            --account-id "$ACCOUNT_ID"
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_events
+          assert any(e['event_type'] == 'MONTHLY_REPORT_GENERATED' for e in list_events(get_engine()))
+          print('Monthly report CRM log OK')
+          PY
 
   build-lead-package:
     if: ${{ github.event_name != 'pull_request' && (vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch') }}
