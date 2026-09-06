@@ -29,17 +29,23 @@ jobs:
         run: pip install -r side_hustle_engine/requirements.txt
 
       - name: Compile Python
-        run: python -m py_compile side_hustle_engine/main.py
-
-      - name: Run sample pipeline
         run: |
-          python side_hustle_engine/main.py \
+          python -m py_compile side_hustle_engine/main.py
+          python -m py_compile side_hustle_engine/agency_pipeline.py
+
+      - name: Run agency sample pipeline
+        run: |
+          python side_hustle_engine/agency_pipeline.py \
             --config side_hustle_engine/config.example.json \
+            --profiles side_hustle_engine/niche_profiles.json \
             --sample \
             --output side_hustle_engine/output-sample
           test -f side_hustle_engine/output-sample/leads.csv
           test -f side_hustle_engine/output-sample/outreach_queue.csv
           test -f side_hustle_engine/output-sample/run_summary.json
+          test -d side_hustle_engine/output-sample/previews
+          test -d side_hustle_engine/output-sample/audits
+          test -d side_hustle_engine/output-sample/prompts
 
   build-lead-package:
     if: ${{ github.event_name != 'pull_request' && (vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch') }}
@@ -59,12 +65,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r side_hustle_engine/requirements.txt
 
-      - name: Generate lead package
+      - name: Generate agency lead package
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          PREVIEW_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
         run: |
-          python side_hustle_engine/main.py \
+          python side_hustle_engine/agency_pipeline.py \
             --config side_hustle_engine/config.example.json \
+            --profiles side_hustle_engine/niche_profiles.json \
             --output side_hustle_engine/output
 
       - name: Upload lead package
