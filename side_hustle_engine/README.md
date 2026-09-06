@@ -1,74 +1,138 @@
-# Side Hustle Engine v1
+# Side Hustle Engine — Agency Factory
 
-A small, auditable pipeline for turning public local-business data into **qualified website-service opportunities** with minimal repetitive work.
+An auditable pipeline for turning public local-business information into **qualified website-agency opportunities, personalised research packs, website concepts and outreach-ready links** with minimal repetitive work.
 
-The goal is not spam or fake passive-income claims. The engine automates the repetitive parts:
+The aim is not spam or fake passive-income claims. The engine automates the research and production work while leaving the trust-sensitive decision to contact a business with a human.
 
-1. Search configured local-business categories with Google Places Text Search (New).
-2. Prioritise businesses with no website listed and useful demand signals.
-3. Generate a clearly-labelled concept preview for each qualified lead.
-4. Produce a review queue with a personalised outreach draft.
-5. Leave the final contact decision to a human.
+## Reel-inspired pipeline
 
-## Why the final outreach is manual
+1. **Find leads** — search selected locations and business categories with Google Places Text Search (New).
+2. **Understand the niche** — map dentists, physiotherapists, clinics, beauty, restaurants and local services to different website structures, trust signals and CTAs.
+3. **Audit the business** — enrich shortlisted leads with Place Details, public reputation themes, Maps review/photo links, phone/hours and, where a website exists, a lightweight conversion/technical audit.
+4. **Model commercial value** — generate a transparent low/base/high website-value scenario and a heuristic agency-conversion probability. These are assumptions for prioritisation, never claims about the business's actual revenue.
+5. **Build the concept** — generate an unofficial personalised HTML preview plus a structured website-generation prompt and audit JSON for deeper automated iteration.
+6. **Prepare outreach** — produce channel-specific email, LinkedIn, Instagram and WhatsApp drafts and, once a preview host is connected, a shareable link for each prospect.
 
-Electronic direct marketing is regulated. This project intentionally does **not** scrape personal email addresses or automatically send cold email/SMS/WhatsApp messages. Review the applicable rules and choose a lawful outreach route before contacting any lead.
+## Research and content guardrails
+
+Google review/photo information is used as **research evidence**. The concept may infer non-quoted themes such as "professional" or "friendly", but production sites should use business-approved facts, assets and claims.
+
+The pipeline does not:
+
+- claim affiliation with the prospect;
+- copy third-party photographs into a production website;
+- turn review text into unattributed testimonials;
+- invent treatments, qualifications, prices, awards or medical outcomes;
+- claim to know a business's current website revenue without analytics;
+- automatically send cold email, SMS, WhatsApp or social DMs.
+
+Preview pages include `noindex,nofollow` and an explicit unofficial-concept notice.
+
+## Files
+
+- `agency_pipeline.py` — V2 agency research, audit, commercial model, concept generation and outreach queue.
+- `niche_profiles.json` — niche matching, suggested information architecture, CTAs and editable commercial assumptions.
+- `config.example.json` — categories, locations, scoring weights and pipeline limits.
+- `main.py` — original V1 website-gap prototype retained for reference.
 
 ## What you need
 
 - Python 3.11+
-- A Google Places API key with Places API (New) enabled
+- Google Places API (New)
 - `pip install -r requirements.txt`
 
-## Quick start
+## Test with no API spend
 
 ```bash
 cd side_hustle_engine
-cp config.example.json config.json
-export GOOGLE_PLACES_API_KEY="your-key"
-python main.py --config config.json --output output
+python agency_pipeline.py \
+  --config config.example.json \
+  --profiles niche_profiles.json \
+  --sample \
+  --output output-sample
 ```
 
-To test the full scoring / preview / queue flow without making an API call:
+The sample uses fictitious businesses but runs the full research → niche → value model → preview → prompt → outreach-queue flow.
+
+## Live run
 
 ```bash
-python main.py --sample --output output-sample
+export GOOGLE_PLACES_API_KEY="your-key"
+python agency_pipeline.py \
+  --config config.example.json \
+  --profiles niche_profiles.json \
+  --output output
 ```
 
 ## Outputs
 
-- `leads.csv` — all discovered candidates and scores
-- `outreach_queue.csv` — shortlisted leads, concept-preview path, and draft message
-- `previews/*.html` — unofficial concept landing pages for your review
-- `run_summary.json` — counts and pipeline metadata
+- `leads.csv` — discovered prospects, scores and niche assignment.
+- `outreach_queue.csv` — shortlisted businesses, problem summary, estimated value scenarios, conversion heuristic, channel drafts and shareable URL when configured.
+- `audits/*.json` — structured business research, website audit and strategy evidence.
+- `prompts/*.md` — business-specific website-generation / refinement brief.
+- `previews/<business>/index.html` — personalised unofficial concept page.
+- `run_summary.json` — batch-level forecast and pipeline metadata.
 
-## Scoring
+## Website audit
 
-The default scoring deliberately favours a measurable digital gap:
+If a prospect already has a website, V2 can check basic signals such as:
 
-- no website listed: strongest signal
-- existing Google rating/review activity: evidence of real demand
-- complete location / Maps information: easier to verify
+- reachability and HTTPS;
+- page title / meta-description presence;
+- mobile viewport;
+- contact links;
+- booking / appointment language;
+- presence of a form.
 
-Tune weights in `config.json` once you have real conversion data.
+This makes the agency target both **no-website businesses** and **weak-website businesses** rather than treating every prospect identically.
 
-## Automation
+## Commercial model
 
-The repository workflow `.github/workflows/side-hustle-engine.yml` can run weekly. It is disabled by default through the repository variable `SIDE_HUSTLE_AUTOMATION_ENABLED`.
+`niche_profiles.json` contains editable assumptions such as customer value and low/base/high incremental-customer scenarios. These exist to rank opportunities and frame a business case.
 
-To enable it:
+For example, the engine can say:
 
-1. Add the Actions secret `GOOGLE_PLACES_API_KEY`.
+> Under the configured base scenario, three incremental customers at an assumed €250 value would represent €750/month.
+
+It must **not** say:
+
+> This clinic is losing €750/month.
+
+until there is real analytics or client-supplied evidence.
+
+The `agency_conversion_probability` is also only a starting heuristic. Once we record actual outreach outcomes, it should be replaced or calibrated using the real conversion dataset.
+
+## Shareable links
+
+Set `PREVIEW_BASE_URL` after connecting a preview host. The generated outreach queue will then contain a link for every preview.
+
+Suitable architecture:
+
+**generated static preview → private/unlisted preview host → unique prospect URL → human-approved outreach**
+
+Netlify Deploy Previews or Cloudflare Pages preview deployments are good candidates because they provide unique preview URLs. Do not publicly index prospect concepts as though they were official sites.
+
+## GitHub Actions automation
+
+`.github/workflows/side-hustle-engine.yml`:
+
+- compiles both V1 and V2;
+- executes a zero-cost fictitious V2 smoke test on the PR;
+- can run the live agency pipeline weekly;
+- uploads the full lead package as a GitHub Actions artifact;
+- never sends outreach automatically.
+
+The scheduled run is gated. To activate it:
+
+1. Add Actions secret `GOOGLE_PLACES_API_KEY`.
 2. Add repository variable `SIDE_HUSTLE_AUTOMATION_ENABLED=true`.
-3. Edit `config.example.json` or replace it with your own checked-in configuration.
-4. Run the workflow manually once before relying on the schedule.
+3. Optionally add repository variable `PREVIEW_BASE_URL` after preview hosting is connected.
+4. Run once manually and review the results before relying on the schedule.
 
-The workflow uploads the generated lead package as an Actions artifact. It does not contact anyone.
+## Operating model
 
-## Commercial model this supports
+The desired mature workflow is:
 
-Use the engine as the top of a productised service funnel:
+**discover → niche → research → audit → prioritise → generate → refine → publish preview → review outreach → sell → onboard → deploy production → recurring maintenance**
 
-**discover -> verify -> concept preview -> human-approved outreach -> paid setup -> recurring hosting/maintenance**
-
-The software can automate discovery, qualification, preview generation, onboarding, deployment, reporting and maintenance. The parts that should remain human are trust-building, approval of claims/content, pricing exceptions and client relationship decisions.
+The machine should eventually do almost all repeated data gathering, audit generation, concept creation, deployment preparation and reporting. Human involvement remains where it adds the most value: quality control, sales conversation, factual approval and client relationship management.
