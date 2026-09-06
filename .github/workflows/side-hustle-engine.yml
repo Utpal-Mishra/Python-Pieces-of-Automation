@@ -32,6 +32,7 @@ jobs:
         run: |
           python -m py_compile side_hustle_engine/main.py
           python -m py_compile side_hustle_engine/agency_pipeline.py
+          python -m py_compile side_hustle_engine/subscription_pipeline.py
 
       - name: Run agency sample pipeline
         run: |
@@ -46,6 +47,16 @@ jobs:
           test -d side_hustle_engine/output-sample/previews
           test -d side_hustle_engine/output-sample/audits
           test -d side_hustle_engine/output-sample/prompts
+
+      - name: Run subscription sample pipeline
+        run: |
+          python side_hustle_engine/subscription_pipeline.py \
+            --profiles side_hustle_engine/subscription_profiles.json \
+            --plan commerce \
+            --sample \
+            --output side_hustle_engine/subscription-output-sample
+          test -f side_hustle_engine/subscription-output-sample/monthly_report.json
+          test -f side_hustle_engine/subscription-output-sample/monthly_report.md
 
   build-lead-package:
     if: ${{ github.event_name != 'pull_request' && (vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch') }}
