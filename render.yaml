@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: agency-control-center
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: feature/side-hustle-engine-v1
+    buildCommand: pip install -r side_hustle_engine/requirements.txt
+    startCommand: streamlit run side_hustle_engine/control_center.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+    healthCheckPath: /_stcore/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: CRM_DATABASE_URL
+        fromDatabase:
+          name: agency-control-db
+          property: connectionString
+      - key: REQUIRE_CONTROL_CENTER_AUTH
+        value: "true"
+      - key: CONTROL_CENTER_PASSWORD
+        sync: false
+      - key: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.11"
+
+databases:
+  - name: agency-control-db
+    plan: free
+    region: frankfurt
+    databaseName: agency_control
+    user: agency_control_user
+    ipAllowList: []
