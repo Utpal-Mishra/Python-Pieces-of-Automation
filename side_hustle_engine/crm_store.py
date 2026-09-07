@@ -82,8 +82,19 @@ def default_database_url() -> str:
     return f"sqlite:///{runtime / 'agency_control.db'}"
 
 
+def normalise_database_url(url: str) -> str:
+    """Use psycopg 3 for generic PostgreSQL URLs supplied by managed hosts."""
+    cleaned = url.strip()
+    if cleaned.startswith("postgres://"):
+        cleaned = "postgresql://" + cleaned[len("postgres://"):]
+    if cleaned.startswith("postgresql://"):
+        cleaned = "postgresql+psycopg://" + cleaned[len("postgresql://"):]
+    return cleaned
+
+
 def get_engine(database_url: str | None = None) -> Engine:
-    url = (database_url or os.getenv("CRM_DATABASE_URL") or default_database_url()).strip()
+    raw_url = database_url or os.getenv("CRM_DATABASE_URL") or default_database_url()
+    url = normalise_database_url(raw_url)
     kwargs: dict[str, Any] = {"future": True, "pool_pre_ping": True}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
