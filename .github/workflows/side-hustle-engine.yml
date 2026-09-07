@@ -1,0 +1,191 @@
+name: Side Hustle Engine
+
+on:
+  pull_request:
+    paths:
+      - "side_hustle_engine/**"
+      - "render.yaml"
+      - ".github/workflows/side-hustle-engine.yml"
+      - ".github/workflows/monthly-client-intelligence.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "15 6 * * 6"
+
+jobs:
+  smoke-test:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r side_hustle_engine/requirements.txt
+
+      - name: Compile Python
+        run: |
+          python -m py_compile side_hustle_engine/main.py
+          python -m py_compile side_hustle_engine/agency_pipeline.py
+          python -m py_compile side_hustle_engine/subscription_pipeline.py
+          python -m py_compile side_hustle_engine/crm_store.py
+          python -m py_compile side_hustle_engine/crm_sync.py
+          python -m py_compile side_hustle_engine/crm_log_report.py
+          python -m py_compile side_hustle_engine/control_center.py
+          python -m py_compile side_hustle_engine/integrations/live_metrics.py
+          python -m py_compile side_hustle_engine/integrations/finalize_share_links.py
+
+      - name: Run agency sample pipeline
+        run: |
+          python side_hustle_engine/agency_pipeline.py \
+            --config side_hustle_engine/config.example.json \
+            --profiles side_hustle_engine/niche_profiles.json \
+            --sample \
+            --output side_hustle_engine/output-sample
+          test -f side_hustle_engine/output-sample/leads.csv
+          test -f side_hustle_engine/output-sample/outreach_queue.csv
+          test -d side_hustle_engine/output-sample/previews
+          test -d side_hustle_engine/output-sample/audits
+          test -d side_hustle_engine/output-sample/prompts
+
+      - name: Test preview share-link finalisation
+        run: |
+          python side_hustle_engine/integrations/finalize_share_links.py \
+            --queue side_hustle_engine/output-sample/outreach_queue.csv \
+            --base-url https://example-preview.invalid
+          grep -q "https://example-preview.invalid" side_hustle_engine/output-sample/outreach_queue.csv
+
+      - name: Test CRM sync and activity store
+        env:
+          CRM_DATABASE_URL: sqlite:///side_hustle_engine/runtime/ci-agency-control.db
+        run: |
+          python side_hustle_engine/crm_sync.py --queue side_hustle_engine/output-sample/outreach_queue.csv
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_accounts, list_events
+          engine = get_engine()
+          assert len(list_accounts(engine)) > 0
+          assert len(list_events(engine)) > 0
+          print('CRM sync OK')
+          PY
+
+      - name: Run integrated subscription sample
+        run: |
+          python side_hustle_engine/integrations/live_metrics.py \
+            --sample \
+            --output side_hustle_engine/integrated-sample.json
+          python side_hustle_engine/subscription_pipeline.py \
+            --profiles side_hustle_engine/subscription_profiles.json \
+            --client side_hustle_engine/integrated-sample.json \
+            --plan commerce \
+            --output side_hustle_engine/subscription-output-sample
+          test -f side_hustle_engine/subscription-output-sample/monthly_report.json
+          test -f side_hustle_engine/subscription-output-sample/monthly_report.md
+
+      - name: Test monthly report CRM logging
+        env:
+          CRM_DATABASE_URL: sqlite:///side_hustle_engine/runtime/ci-agency-control.db
+        run: |
+          ACCOUNT_ID=$(python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_accounts
+          print(list_accounts(get_engine())[0]['id'])
+          PY
+          )
+          python side_hustle_engine/crm_log_report.py \
+            --report side_hustle_engine/subscription-output-sample/monthly_report.json \
+            --account-id "$ACCOUNT_ID"
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'side_hustle_engine')
+          from crm_store import get_engine, list_events
+          assert any(e['event_type'] == 'MONTHLY_REPORT_GENERATED' for e in list_events(get_engine()))
+          print('Monthly report CRM log OK')
+          PY
+
+  build-lead-package:
+    if: ${{ github.event_name != 'pull_request' && (vars.SIDE_HUSTLE_AUTOMATION_ENABLED == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r side_hustle_engine/requirements.txt
+
+      - name: Generate agency lead package
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+        run: |
+          python side_hustle_engine/agency_pipeline.py \
+            --config side_hustle_engine/config.example.json \
+            --profiles side_hustle_engine/niche_profiles.json \
+            --output side_hustle_engine/output
+
+      - name: Set up Node for optional preview deploy
+        if: ${{ vars.PREVIEW_DEPLOY_ENABLED == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy prospect pages to Netlify draft URL
+        if: ${{ vars.PREVIEW_DEPLOY_ENABLED == 'true' }}
+        id: preview_deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npm install -g netlify-cli
+          netlify deploy \
+            --dir=side_hustle_engine/output/previews \
+            --site="$NETLIFY_SITE_ID" \
+            --auth="$NETLIFY_AUTH_TOKEN" \
+            --no-build \
+            --json > /tmp/netlify-deploy.json
+          DEPLOY_URL=$(python - <<'PY'
+          import json
+          payload = json.load(open('/tmp/netlify-deploy.json', encoding='utf-8'))
+          for key in ('deploy_url', 'deploy_ssl_url', 'url'):
+              if payload.get(key):
+                  print(payload[key])
+                  break
+          else:
+              raise SystemExit(f'No deploy URL found in Netlify response keys: {list(payload)}')
+          PY
+          )
+          python side_hustle_engine/integrations/finalize_share_links.py \
+            --queue side_hustle_engine/output/outreach_queue.csv \
+            --base-url "$DEPLOY_URL"
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Sync generated prospects into private CRM
+        if: ${{ vars.CRM_AUTO_SYNC_ENABLED == 'true' }}
+        env:
+          CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
+        run: |
+          python side_hustle_engine/crm_sync.py \
+            --queue side_hustle_engine/output/outreach_queue.csv
+
+      - name: Upload private agency package
+        uses: actions/upload-artifact@v4
+        with:
+          name: side-hustle-leads-${{ github.run_number }}
+          path: side_hustle_engine/output
+          retention-days: 14

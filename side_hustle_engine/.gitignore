@@ -1,0 +1,11 @@
+config.json
+output/
+output-*/
+subscription-output*/
+runtime/
+clients/
+__pycache__/
+*.pyc
+.env
+*.credentials.json
+*service-account*.json

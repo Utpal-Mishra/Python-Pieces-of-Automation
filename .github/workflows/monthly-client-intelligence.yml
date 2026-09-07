@@ -1,0 +1,94 @@
+name: Monthly Client Intelligence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 7 2 * *"
+
+jobs:
+  pilot-client-report:
+    if: ${{ vars.CLIENT_INTELLIGENCE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r side_hustle_engine/requirements.txt
+
+      - name: Materialise private client configuration
+        env:
+          PILOT_CLIENT_CONFIG_JSON: ${{ secrets.PILOT_CLIENT_CONFIG_JSON }}
+          PILOT_GOOGLE_ADC_JSON: ${{ secrets.PILOT_GOOGLE_ADC_JSON }}
+        run: |
+          mkdir -p /tmp/side-hustle-client
+          printf '%s' "$PILOT_CLIENT_CONFIG_JSON" > /tmp/side-hustle-client/client.json
+          printf '%s' "$PILOT_GOOGLE_ADC_JSON" > /tmp/side-hustle-client/google-adc.json
+          chmod 600 /tmp/side-hustle-client/client.json /tmp/side-hustle-client/google-adc.json
+
+      - name: Collect authorised client metrics
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/side-hustle-client/google-adc.json
+          PILOT_SHOPIFY_ACCESS_TOKEN: ${{ secrets.PILOT_SHOPIFY_ACCESS_TOKEN }}
+        run: |
+          python side_hustle_engine/integrations/live_metrics.py \
+            --client /tmp/side-hustle-client/client.json \
+            --output /tmp/side-hustle-client/metrics.json
+
+      - name: Determine subscription plan
+        id: plan
+        run: |
+          PLAN=$(python - <<'PY'
+          import json
+          config = json.load(open('/tmp/side-hustle-client/client.json', encoding='utf-8'))
+          print(config.get('plan', 'growth'))
+          PY
+          )
+          case "$PLAN" in
+            care|growth|commerce) ;;
+            *) echo "Unsupported plan: $PLAN"; exit 1 ;;
+          esac
+          echo "value=$PLAN" >> "$GITHUB_OUTPUT"
+
+      - name: Generate monthly client report
+        run: |
+          python side_hustle_engine/subscription_pipeline.py \
+            --profiles side_hustle_engine/subscription_profiles.json \
+            --client /tmp/side-hustle-client/metrics.json \
+            --plan "${{ steps.plan.outputs.value }}" \
+            --output /tmp/side-hustle-client/report
+
+      - name: Log report into Agency Control Center
+        if: ${{ vars.CRM_AUTO_SYNC_ENABLED == 'true' }}
+        env:
+          CRM_DATABASE_URL: ${{ secrets.CRM_DATABASE_URL }}
+        run: |
+          ACCOUNT_ID=$(python - <<'PY'
+          import json
+          config = json.load(open('/tmp/side-hustle-client/client.json', encoding='utf-8'))
+          print(config.get('crm_account_id', ''))
+          PY
+          )
+          if [ -n "$ACCOUNT_ID" ]; then
+            python side_hustle_engine/crm_log_report.py \
+              --report /tmp/side-hustle-client/report/monthly_report.json \
+              --account-id "$ACCOUNT_ID"
+          else
+            python side_hustle_engine/crm_log_report.py \
+              --report /tmp/side-hustle-client/report/monthly_report.json
+          fi
+
+      - name: Upload client report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-intelligence-${{ github.run_number }}
+          path: /tmp/side-hustle-client/report
+          retention-days: 30
