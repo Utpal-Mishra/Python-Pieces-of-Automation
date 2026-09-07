@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "side_hustle_engine/**"
+      - "render.yaml"
       - ".github/workflows/side-hustle-engine.yml"
       - ".github/workflows/monthly-client-intelligence.yml"
   workflow_dispatch:
